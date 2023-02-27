@@ -1,0 +1,14 @@
+[Unit]
+Description=Server that runs outside the enclave
+PartOf=nitro-lookup.service
+
+[Service]
+ExecStart=/bin/python3 ${nitro_lookup_dir}/instance-server.py ${server_port}
+Type=simple
+Restart=on-failure
+User=root
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+RequiredBy=network.target
