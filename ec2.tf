@@ -122,4 +122,12 @@ resource "aws_instance" "enclave_instance" {
 	depends_on = [
 		aws_s3_object.enclave_files
 	]
+	
+	lifecycle {
+		create_before_destroy = true
+		
+		replace_triggered_by = [
+			aws_s3_object.enclave_files
+		]
+	}
 }
