@@ -1,6 +1,6 @@
 # Once Terraform accepts ssm parameters as the image_id for launch templates, this can be removed
 data "aws_ssm_parameter" "ami_id" {
-  name = "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+	name = "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
 }
 
 resource "aws_security_group" "allow_web" {
