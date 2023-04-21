@@ -11,6 +11,7 @@ data "template_file" "nitro_lookup_file" {
 		nitro_lookup_dir = local.nitro_lookup_dir
 		enclave_port		 = 5005
 		server_port			 = local.server_port
+		account_id			 = data.aws_caller_identity.current.account_id
 	}
 }
 

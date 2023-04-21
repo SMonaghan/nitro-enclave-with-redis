@@ -2,7 +2,7 @@
 # // SPDX-License-Identifier: MIT-0
 
 #vsock demo image
-FROM redis:7.0.10-alpine3.17
+FROM ${account_id}.dkr.ecr.us-east-1.amazonaws.com/ecr-public/docker/library/redis:7.0.10-alpine3.17
 
 # Install python for running the server and net-tools for modifying network config
 #RUN yum install python3 iproute   -y

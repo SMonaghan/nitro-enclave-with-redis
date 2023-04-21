@@ -10,3 +10,11 @@ variable "enclave_api_name" {
 	type		= string
 	default = "enclave-api"
 }
+
+variable "domain" {
+	type = string
+}
+
+variable "assume_role" {
+    type = string
+}

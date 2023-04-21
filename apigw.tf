@@ -1,5 +1,23 @@
+resource "aws_vpc_endpoint" "nitro_api_endpoint" {
+  private_dns_enabled = false
+  security_group_ids  = [aws_security_group.allow_web.id]
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.execute-api"
+  subnet_ids          = var.subnet_ids
+  vpc_endpoint_type   = "Interface"
+  vpc_id              = var.vpc_id
+  
+	tags = {
+    Name = "Nitro Api Endpoint"
+  }
+}
+
 resource "aws_api_gateway_rest_api" "api" {
 	name = var.enclave_api_name
+	
+	endpoint_configuration {
+		types            = ["REGIONAL"]
+    # vpc_endpoint_ids = [aws_vpc_endpoint.nitro_api_endpoint.id]
+	}
 }
 
 resource "aws_api_gateway_method" "root_put_method" {
@@ -22,7 +40,7 @@ resource "aws_api_gateway_integration" "root_put_int" {
 	}
 
 	type                    = "HTTP"
-	uri                     = "http://${aws_instance.enclave_instance.public_ip}"
+	uri                     = "https://${local.enclave_instance_domain}"
 	integration_http_method = "PUT"
 }
 
@@ -31,9 +49,14 @@ resource "aws_api_gateway_method_response" "root_put_method_response_200" {
 	resource_id = aws_api_gateway_rest_api.api.root_resource_id
 	http_method = aws_api_gateway_method.root_put_method.http_method
 	status_code = "200"
-	response_models     = {
-		"application/json" = "Empty"
+	
+	response_models = {
+		"text/plain" = "Empty"
 	}
+	
+	response_parameters = {
+    "method.response.header.content-type" = false
+  }
 	
 	depends_on = [
 		aws_api_gateway_integration.root_put_int,
@@ -46,6 +69,10 @@ resource "aws_api_gateway_integration_response" "root_put_int_response" {
 	resource_id = aws_api_gateway_rest_api.api.root_resource_id
 	http_method = aws_api_gateway_method.root_put_method.http_method
 	status_code = aws_api_gateway_method_response.root_put_method_response_200.status_code
+	
+	response_parameters = {
+		"method.response.header.content-type" = "integration.response.header.content-type"
+	}
 	
 	depends_on = [
 		aws_api_gateway_integration.root_put_int,
@@ -80,7 +107,7 @@ resource "aws_api_gateway_integration" "key_get_int" {
 	}
 
 	type                    = "HTTP"
-	uri                     = "http://${aws_instance.enclave_instance.public_ip}/{key}"
+	uri                     = "https://${local.enclave_instance_domain}/{key}"
 	integration_http_method = "GET"
 }
 
@@ -89,9 +116,14 @@ resource "aws_api_gateway_method_response" "key_get_method_response_200" {
 	resource_id = aws_api_gateway_resource.key_resource.id
 	http_method = aws_api_gateway_method.key_get_method.http_method
 	status_code = "200"
-	response_models     = {
-		"application/json" = "Empty"
+	
+	response_models = {
+		"text/plain" = "Empty"
 	}
+	
+  response_parameters = {
+    "method.response.header.content-type" = false
+  }
 	
 	depends_on = [
 		aws_api_gateway_integration.key_get_int,
@@ -104,6 +136,10 @@ resource "aws_api_gateway_integration_response" "key_get_int_response" {
 	resource_id = aws_api_gateway_resource.key_resource.id
 	http_method = aws_api_gateway_method.key_get_method.http_method
 	status_code = aws_api_gateway_method_response.key_get_method_response_200.status_code
+	
+	response_parameters = {
+		"method.response.header.content-type" = "integration.response.header.content-type"
+	}
 	
 	depends_on = [
 		aws_api_gateway_integration.key_get_int,
@@ -158,4 +194,19 @@ resource "aws_api_gateway_stage" "stage" {
 		aws_api_gateway_method_response.key_get_method_response_200,
 		aws_api_gateway_method_response.root_put_method_response_200,
 	]
+}
+
+resource "aws_api_gateway_domain_name" "enclave_api_domain" {
+	domain_name     = local.enclave_domain
+	regional_certificate_arn = aws_acm_certificate_validation.enclave_cert_domain_validation.certificate_arn
+	
+	endpoint_configuration {
+		types = ["REGIONAL"]
+	}
+}
+
+resource "aws_api_gateway_base_path_mapping" "enclave_path_mapping" {
+	api_id      = aws_api_gateway_rest_api.api.id
+	stage_name  = aws_api_gateway_stage.stage.stage_name
+	domain_name = aws_api_gateway_domain_name.enclave_api_domain.domain_name
 }
