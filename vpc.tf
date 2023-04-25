@@ -79,9 +79,9 @@ resource "aws_vpc_endpoint" "ssm" {
   }
 }
 
-resource "aws_vpc_endpoint" "ecr_dkr" {
+resource "aws_vpc_endpoint" "kms" {
   vpc_id            = var.vpc_id
-  service_name      = "com.amazonaws.${data.aws_region.current.name}.ecr.dkr"
+  service_name      = "com.amazonaws.${data.aws_region.current.name}.kms"
   vpc_endpoint_type = "Interface"
   subnet_ids        = var.subnet_ids
 
@@ -92,23 +92,6 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
   private_dns_enabled = true
   
   tags = {
-    Name = "nitro-enclave-ecr-endpoint-dkr"
-  }
-}
-
-resource "aws_vpc_endpoint" "ecr_api" {
-  vpc_id            = var.vpc_id
-  service_name      = "com.amazonaws.${data.aws_region.current.name}.ecr.api"
-  vpc_endpoint_type = "Interface"
-  subnet_ids        = var.subnet_ids
-
-  security_group_ids = [
-    aws_security_group.endpoint_sg.id,
-  ]
-
-  private_dns_enabled = true
-  
-  tags = {
-    Name = "nitro-enclave-ecr-endpoint-api"
+    Name = "nitro-enclave-kms"
   }
 }

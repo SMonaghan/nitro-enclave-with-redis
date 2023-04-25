@@ -29,3 +29,4 @@ override.tf.json
 # example: *tfplan*
 
 enclave-acm.json
+generated_files/*

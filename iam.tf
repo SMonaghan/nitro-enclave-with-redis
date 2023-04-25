@@ -121,3 +121,4 @@ resource "aws_iam_instance_profile" "enclave_instance_profile" {
 	name_prefix = "EnclavePOCInstanceProfile-"
 	role = aws_iam_role.enclave_instance_role.name
 }
+

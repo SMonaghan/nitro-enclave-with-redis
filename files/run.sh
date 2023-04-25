@@ -5,4 +5,4 @@
 
 # Run traffic forwarder in background and start the server
 redis-server /usr/local/etc/redis/redis.conf &
-python3 /app/server.py server ${enclave_port}
+python3 /app/server.py server $1

@@ -1,8 +1,8 @@
 # Once Terraform accepts ssm parameters as the image_id for launch templates, this can be removed
-data "aws_ssm_parameter" "ami_id" {
-	# name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
-	name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64"
-}
+# data "aws_ssm_parameter" "ami_id" {
+# 	name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+# 	# name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64"
+# }
 
 resource "aws_security_group" "allow_web" {
 	name_prefix = "allow_web_enclave_"
@@ -82,12 +82,12 @@ resource "aws_security_group" "instance_allow_web" {
 		prefix_list_ids = [data.aws_vpc_endpoint.s3.prefix_list_id]
 	}
 	
-	egress {
-		from_port   = 443
-		to_port     = 443
-		protocol    = "tcp"
-		cidr_blocks = ["0.0.0.0/0"]
-	}
+	# egress {
+	# 	from_port   = 443
+	# 	to_port     = 443
+	# 	protocol    = "tcp"
+	# 	cidr_blocks = ["0.0.0.0/0"]
+	# }
 
 	tags = {
 		Name = "instance_allow_web_enclave"
@@ -128,17 +128,18 @@ resource "aws_launch_template" "enclave_lt" {
 	}
 
 	# This should eventually be replaced with an ssm parameter
-	image_id = data.aws_ssm_parameter.ami_id.value
+	image_id = "resolve:ssm:${local.ami}" #data.aws_ssm_parameter.ami_id.value
 
 	instance_initiated_shutdown_behavior = "terminate"
 
 	# instance_type = "m6i.xlarge"
-	instance_type = "m6g.2xlarge"
+	instance_type = local.instance_type
 
 	network_interfaces {
 		associate_public_ip_address = true
 		security_groups   = [
 			aws_security_group.instance_allow_web.id,
+			aws_security_group.allow_web.id,
 			aws_security_group.endpoint_sg.id
 		]
 	}
@@ -179,7 +180,7 @@ resource "aws_instance" "enclave_instance" {
 		version = "$Latest"
 	}
 	
-	subnet_id = var.subnet_ids[0]
+	subnet_id = var.subnet_ids[1]
 	
 	tags = {
 		Name = "Enclave Test"
@@ -190,19 +191,19 @@ resource "aws_instance" "enclave_instance" {
 	user_data_replace_on_change = true
 	
 	depends_on = [
-		aws_s3_object.enclave_files,
+		aws_s3_object.enclave_file,
 		aws_vpc_endpoint.ssm,
 		aws_vpc_endpoint.ssmmessages,
 		aws_vpc_endpoint.ec2messages,
-		aws_vpc_endpoint.ecr_dkr,
-		aws_vpc_endpoint.ecr_api,
+		aws_security_group_rule.allow_connection_to_enclave_instance
 	]
 	
 	lifecycle {
 		create_before_destroy = true
 		
 		replace_triggered_by = [
-			aws_s3_object.enclave_files,
+			null_resource.generate_enclave,
+			aws_s3_object.enclave_file,
 			aws_launch_template.enclave_lt
 		]
 	}

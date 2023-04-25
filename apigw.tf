@@ -15,8 +15,8 @@ resource "aws_api_gateway_rest_api" "api" {
 	name = var.enclave_api_name
 	
 	endpoint_configuration {
-		types            = ["REGIONAL"]
-    # vpc_endpoint_ids = [aws_vpc_endpoint.nitro_api_endpoint.id]
+		types            = ["PRIVATE"]
+    vpc_endpoint_ids = [aws_vpc_endpoint.nitro_api_endpoint.id]
 	}
 }
 
@@ -193,20 +193,43 @@ resource "aws_api_gateway_stage" "stage" {
 		aws_api_gateway_method.root_put_method,
 		aws_api_gateway_method_response.key_get_method_response_200,
 		aws_api_gateway_method_response.root_put_method_response_200,
+		aws_api_gateway_rest_api_policy.api_gw_resource_policy,
 	]
 }
 
-resource "aws_api_gateway_domain_name" "enclave_api_domain" {
-	domain_name     = local.enclave_domain
-	regional_certificate_arn = aws_acm_certificate_validation.enclave_cert_domain_validation.certificate_arn
-	
-	endpoint_configuration {
-		types = ["REGIONAL"]
-	}
+
+data "aws_iam_policy_document" "api_gw_resource_policy" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = [
+      	data.aws_caller_identity.current.account_id,
+      	"arn:aws:iam::489546153674:role/Admin"
+      ]
+    }
+
+    actions   = ["execute-api:Invoke"]
+    resources = [aws_api_gateway_rest_api.api.execution_arn]
+  }
+}
+resource "aws_api_gateway_rest_api_policy" "api_gw_resource_policy" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  policy      = data.aws_iam_policy_document.api_gw_resource_policy.json
 }
 
-resource "aws_api_gateway_base_path_mapping" "enclave_path_mapping" {
-	api_id      = aws_api_gateway_rest_api.api.id
-	stage_name  = aws_api_gateway_stage.stage.stage_name
-	domain_name = aws_api_gateway_domain_name.enclave_api_domain.domain_name
-}
+# resource "aws_api_gateway_domain_name" "enclave_api_domain" {
+# 	domain_name     = local.enclave_domain
+# 	regional_certificate_arn = aws_acm_certificate_validation.enclave_cert_domain_validation.certificate_arn
+	
+# 	endpoint_configuration {
+# 		types = ["PRIVATE"]
+# 	}
+# }
+
+# resource "aws_api_gateway_base_path_mapping" "enclave_path_mapping" {
+# 	api_id      = aws_api_gateway_rest_api.api.id
+# 	stage_name  = aws_api_gateway_stage.stage.stage_name
+# 	domain_name = aws_api_gateway_domain_name.enclave_api_domain.domain_name
+# }

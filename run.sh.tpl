@@ -56,6 +56,7 @@ sudo chmod 0755 /bin/start-enclave*.sh
 sudo cp ${nitro_lookup_dir}/nitro-lookup.service /etc/systemd/system/nitro-lookup.service
 sudo cp ${nitro_lookup_dir}/lookup-server.service /etc/systemd/system/lookup-server.service
 sudo systemctl start nitro-lookup.service && sudo systemctl enable nitro-lookup.service
+sleep 10
 sudo systemctl start lookup-server.service && sudo systemctl enable lookup-server.service
 sudo systemctl start nitro-enclaves-acm.service && sudo systemctl enable nitro-enclaves-acm
 
