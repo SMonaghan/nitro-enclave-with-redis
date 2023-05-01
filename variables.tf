@@ -1,11 +1,3 @@
-variable "vpc_id" {
-	type = string
-}
-
-variable "subnet_ids" {
-	type = list(string)
-}
-
 variable "enclave_api_name" {
 	type		= string
 	default = "enclave-api"
@@ -13,6 +5,11 @@ variable "enclave_api_name" {
 
 variable "domain" {
 	type = string
+}
+
+variable "region" {
+	type = string
+	default = "us-east-1"
 }
 
 variable "assume_role" {

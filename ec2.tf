@@ -1,13 +1,7 @@
-# Once Terraform accepts ssm parameters as the image_id for launch templates, this can be removed
-# data "aws_ssm_parameter" "ami_id" {
-# 	name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
-# 	# name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64"
-# }
-
 resource "aws_security_group" "allow_web" {
 	name_prefix = "allow_web_enclave_"
 	description = "Allow web requests to enclave api"
-	vpc_id      = var.vpc_id
+	vpc_id      = aws_vpc.main.id
 
 	ingress {
 		description      = "TLS from anywhere"
@@ -50,7 +44,7 @@ resource "aws_security_group_rule" "allow_connection_to_enclave_instance" {
 resource "aws_security_group" "instance_allow_web" {
 	name_prefix = "instance_allow_web_enclave_"
 	description = "Allow web requests to enclave server"
-	vpc_id      = var.vpc_id
+	vpc_id      = aws_vpc.main.id
 
 	ingress {
 		description     = "HTTPS from Web Security Group"
@@ -79,15 +73,15 @@ resource "aws_security_group" "instance_allow_web" {
 		from_port       = 443
 		to_port         = 443
 		protocol        = "tcp"
-		prefix_list_ids = [data.aws_vpc_endpoint.s3.prefix_list_id]
+		prefix_list_ids = [aws_vpc_endpoint.s3.prefix_list_id]
 	}
-	
-	# egress {
-	# 	from_port   = 443
-	# 	to_port     = 443
-	# 	protocol    = "tcp"
-	# 	cidr_blocks = ["0.0.0.0/0"]
-	# }
+
+	egress {
+		from_port   = 443
+		to_port     = 443
+		protocol    = "tcp"
+		cidr_blocks = ["0.0.0.0/0"]
+	}
 
 	tags = {
 		Name = "instance_allow_web_enclave"
@@ -136,7 +130,7 @@ resource "aws_launch_template" "enclave_lt" {
 	instance_type = local.instance_type
 
 	network_interfaces {
-		associate_public_ip_address = true
+		associate_public_ip_address = false
 		security_groups   = [
 			aws_security_group.instance_allow_web.id,
 			aws_security_group.allow_web.id,
@@ -168,9 +162,9 @@ data "template_file" "user_data" {
 		volume_mount     = local.volume_mount
 		nitro_lookup_dir = local.nitro_lookup_dir
 		local_port			 = local.server_port
-		certificate_arn	 = aws_acm_certificate_validation.enclave_instance_cert_domain_validation.certificate_arn
+		certificate_arn	 = aws_acm_certificate_validation.enclave_cert_domain_validation.certificate_arn
 		
-		enclave_instance_domain = local.enclave_instance_domain
+		enclave_instance_domain = local.enclave_domain
 	}
 }
 
@@ -180,7 +174,7 @@ resource "aws_instance" "enclave_instance" {
 		version = "$Latest"
 	}
 	
-	subnet_id = var.subnet_ids[1]
+	subnet_id = local.private_subnets[1]
 	
 	tags = {
 		Name = "Enclave Test"
@@ -195,6 +189,7 @@ resource "aws_instance" "enclave_instance" {
 		aws_vpc_endpoint.ssm,
 		aws_vpc_endpoint.ssmmessages,
 		aws_vpc_endpoint.ec2messages,
+		aws_vpc_endpoint.kms,
 		aws_security_group_rule.allow_connection_to_enclave_instance
 	]
 	
@@ -204,15 +199,54 @@ resource "aws_instance" "enclave_instance" {
 		replace_triggered_by = [
 			null_resource.generate_enclave,
 			aws_s3_object.enclave_file,
-			aws_launch_template.enclave_lt
+			aws_launch_template.enclave_lt,
+			null_resource.instance_role_enclave_cert_registration
 		]
 	}
+}
+
+resource "aws_lb" "enclave_lb" {
+  name_prefix				 = "ne-lb-"
+  internal           = false
+  load_balancer_type = "network"
+  subnets            = local.public_subnets
+
+  enable_deletion_protection = false
+
+  tags = {
+    Name = "Nitro Enclave Network LB"
+  }
+}
+
+resource "aws_lb_target_group" "enclave_tg" {
+  name_prefix = "ne-tg-"
+  port				= 443
+  protocol		= "TCP_UDP"
+  target_type = "ip"
+  vpc_id  		= aws_vpc.main.id
+}
+
+resource "aws_lb_listener" "enclave_listener_443" {
+  load_balancer_arn = aws_lb.enclave_lb.arn
+  port              = "443"
+  protocol          = "TCP_UDP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.enclave_tg.arn
+  }
+}
+
+resource "aws_lb_target_group_attachment" "attach_instance_to_tg_443" {
+  target_group_arn = aws_lb_target_group.enclave_tg.arn
+  target_id        = aws_instance.enclave_instance.private_ip
+  port             = 443
 }
 
 resource "null_resource" "instance_role_enclave_cert_registration" {
 	triggers = {
 		region					= data.aws_region.current.name
-		certificate_arn	= aws_acm_certificate_validation.enclave_instance_cert_domain_validation.certificate_arn
+		certificate_arn	= aws_acm_certificate_validation.enclave_cert_domain_validation.certificate_arn
 		instance_role 	= aws_iam_role.enclave_instance_role.arn
 		assume_role			= var.assume_role
 		# test						= uuid()
