@@ -22,7 +22,7 @@ class HTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_PUT(self):
         path = self.translate_path(self.path)
         length = int(self.headers['Content-Length'])
-        query = json.dumps({'set': nitro_client.prepare_server_request(json.loads(self.rfile.read(length).decode()))}).encode()
+        query = json.dumps({'set': nitro_client.prepare_server_request(self.rfile.read(length).decode())}).encode()
         print(query)
         query64 = base64.b64encode(query)
         print(query64)
@@ -31,7 +31,7 @@ class HTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_response(201)
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
-        message = "Created".encode()
+        message = output.encode()
         self.wfile.write(message)
     def do_GET(self):
         path = '/'.join(self.path.split('/')[1:])

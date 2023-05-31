@@ -169,7 +169,7 @@ data "aws_iam_policy_document" "kms_nitro_policy" {
 		}
 
 		actions = [
-			"kms:encrypt"
+			"kms:*"
 		]
 
 		resources = [
@@ -231,7 +231,8 @@ data "aws_iam_policy_document" "kms_nitro_policy" {
       "kms:TagResource",
       "kms:UntagResource",
       "kms:ScheduleKeyDeletion",
-      "kms:CancelKeyDeletion"
+      "kms:CancelKeyDeletion",
+      "kms:Encrypt"
 		]
 
 		resources = [

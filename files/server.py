@@ -125,13 +125,18 @@ def server_handler(args):
 	server.recv_data()
 
 def put_in_redis(query):
+	status, query = get_plaintext(query)
+	if status:
+		print(query)
+		return query
+	try:
+		query = json.loads(query)
+	except ValueError:
+		return 'Failed to put in data: Mot valid JSON'
+	print('query: {}'.format(query))
 	for key in query.keys():
-		status, value = get_plaintext(key)
-		if status:
-			print(value)
-			return value
-		r.set(key, value)
-		print("Setting {} to {}".format(key, value))
+		r.set(key, query[key])
+		print("Setting {} to {}".format(key, query[key]))
 	return "Put the data in"
 
 # Get list of current ip ranges for the S3 service for a region.
