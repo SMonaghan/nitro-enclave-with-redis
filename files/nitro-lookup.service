@@ -3,7 +3,7 @@ Description=Nitro Enclave lookup service
 After=network.target
 
 [Service]
-ExecStart=/bin/start-enclave.sh
+ExecStart=/bin/start-enclave-in-debug-mode.sh
 ExecStop=/bin/terminate-enclave.sh
 RemainAfterExit=yes
 Type=simple

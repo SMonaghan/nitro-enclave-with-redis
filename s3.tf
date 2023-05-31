@@ -38,5 +38,7 @@ resource "aws_s3_object" "enclave_file" {
 		replace_triggered_by = [
 			null_resource.generate_enclave
 		]
+		
+		create_before_destroy = false
 	}
 }

@@ -47,19 +47,11 @@ resource "aws_security_group" "instance_allow_web" {
 	vpc_id      = aws_vpc.main.id
 
 	ingress {
-		description     = "HTTPS from Web Security Group"
-		from_port       = 443
-		to_port         = 443
-		protocol        = "tcp"
-		security_groups = [aws_security_group.allow_web.id]
-	}
-	
-	ingress {
 		description     = "HTTP Connection Web Security Group"
 		from_port       = 80
 		to_port         = 80
 		protocol        = "tcp"
-		security_groups = [aws_security_group.allow_web.id]
+		cidr_blocks = ["0.0.0.0/0"]
 	}
 	
 	ingress {
@@ -133,7 +125,6 @@ resource "aws_launch_template" "enclave_lt" {
 		associate_public_ip_address = false
 		security_groups   = [
 			aws_security_group.instance_allow_web.id,
-			aws_security_group.allow_web.id,
 			aws_security_group.endpoint_sg.id
 		]
 	}
@@ -186,6 +177,8 @@ resource "aws_instance" "enclave_instance" {
 	
 	depends_on = [
 		aws_s3_object.enclave_file,
+		aws_s3_object.enclave_files,
+		null_resource.generate_enclave,
 		aws_vpc_endpoint.ssm,
 		aws_vpc_endpoint.ssmmessages,
 		aws_vpc_endpoint.ec2messages,

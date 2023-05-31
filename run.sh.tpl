@@ -8,18 +8,8 @@ sudo /usr/bin/lsblk
 sudo /usr/bin/df -h
 sudo su -c "echo \"$(blkid ${volume_mount} |cut -d ' ' -f 2-2|tr -d '"')  /var/lib/docker  xfs  defaults  0  2\" >> /etc/fstab";
 sudo cat /etc/fstab
-sudo yum install aws-nitro-enclaves-cli aws-nitro-enclaves-cli-devel git httpd mod_ssl aws-nitro-enclaves-acm nginx httpd mod_ssl -y
-#sudo mv /etc/nitro_enclaves/acm.example.yaml /etc/nitro_enclaves/acm.yaml
-#sudo sed -i 's|certificate_arn: ""|certificate_arn: "${certificate_arn}"|g' /etc/nitro_enclaves/acm.yaml
-#sudo sed -i 's|pid /run/nginx.pid;|pid /run/nginx.pid;\n\nssl_engine pkcs11;|g' /etc/nginx/nginx.conf
-#sudo sed -i '39,55 s/^/#/' /etc/nginx/nginx.conf
-#sudo sed -i '58,82 s/#//' /etc/nginx/nginx.conf
-#sudo sed -i 's/server_name  _;/server_name  ${enclave_instance_domain};/' /etc/nginx/nginx.conf
-#sudo sed -i '57,81 s|ssl_certificate "/etc/pki/nginx/server.crt";||' /etc/nginx/nginx.conf
-#sudo sed -i '57,80 s|ssl_certificate_key "/etc/pki/nginx/private/server.key";||' /etc/nginx/nginx.conf
-#sudo sed -i '57,79 s|ssl_ciphers PROFILE=SYSTEM;|ssl_protocols TLSv1.2;|' /etc/nginx/nginx.conf
-#sudo sed -i 's/listen       \[::\]:443 ssl http2;//g' /etc/nginx/nginx.conf
-#sudo sed -i 's|ssl_prefer_server_ciphers on;|ssl_prefer_server_ciphers on;\n\t#Set this to the stanza path configured in /etc/nitro_enclaves/acm.yaml\n\tinclude "/etc/pki/nginx/nginx-acm.conf";|' /etc/nginx/nginx.conf
+sudo yum install aws-nitro-enclaves-cli aws-nitro-enclaves-cli-devel git httpd mod_ssl aws-nitro-enclaves-acm nginx httpd mod_ssl pip -y
+sudo pip3 install boto3
 sudo usermod -aG ne ec2-user
 sudo usermod -aG docker ec2-user
 sudo echo "---

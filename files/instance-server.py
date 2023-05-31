@@ -7,6 +7,7 @@ import enclave_client
 import base64
 import subprocess
 import json
+import nitro_client
 
 output = subprocess.check_output(['nitro-cli', 'describe-enclaves'])
 enclaves = json.loads(output)
@@ -21,7 +22,7 @@ class HTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_PUT(self):
         path = self.translate_path(self.path)
         length = int(self.headers['Content-Length'])
-        query = json.dumps({'set': json.loads(self.rfile.read(length).decode())}).encode()
+        query = json.dumps({'set': nitro_client.prepare_server_request(json.loads(self.rfile.read(length).decode()))}).encode()
         print(query)
         query64 = base64.b64encode(query)
         print(query64)
@@ -33,8 +34,9 @@ class HTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         message = "Created".encode()
         self.wfile.write(message)
     def do_GET(self):
-        path = self.path.split('/')[1]
-        query = json.dumps({'get': path}).encode()
+        path = '/'.join(self.path.split('/')[1:])
+        print(path)
+        query = json.dumps({'get': nitro_client.prepare_server_request(path)}).encode()
         print(query)
         query64 = base64.b64encode(query)
         print(query64)

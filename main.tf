@@ -8,7 +8,7 @@ terraform {
 }
 
 locals {
-	architecture		 = "x86_64"
+	architecture		 = lower(var.architecture)
 	ami							 = lookup({"x86_64" = local.ami_ssm_x86, "arm" = local.ami_ssm_arm}, local.architecture)
 	ami_ssm_x86 		 = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
 	ami_ssm_arm 		 = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64"

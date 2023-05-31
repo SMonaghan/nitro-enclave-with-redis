@@ -8,9 +8,20 @@ import urllib.request
 import redis
 import base64
 import re
+import boto3
+import os
+import subprocess
+from faker import Faker
+fake = Faker('en_US')
+Faker.seed(1337)
+
+kms_client = boto3.client('kms')
+kms_key_id = os.environ.get('KMS_KEY_ID')
 
 r = redis.Redis(unix_socket_path='/run/redis.sock')
 for i in range(1,100):
+	name = fake.name()
+	r.set(name, 'bar{}'.format(i))
 	r.set('foo{}'.format(i), 'bar{}'.format(i))
 
 # Running server you have pass port the server  will listen to. For Example:
@@ -34,7 +45,7 @@ class VsockListener:
 				(from_client, (remote_cid, remote_port)) = self.sock.accept()
 				print("Connection from " + str(from_client) + str(remote_cid) + str(remote_port))
 				
-				query = json.loads(base64.b64decode(from_client.recv(1024).decode()).decode())
+				query = json.loads(base64.b64decode(from_client.recv(4096).decode()).decode())
 				print("Message received: {}".format(query))
 				query_type = list(query.keys())[0]
 				query = query[query_type]
@@ -55,6 +66,58 @@ class VsockListener:
 			except Exception as ex:
 				print(ex)
 
+KMS_PROXY_PORT="8000"
+
+def get_plaintext(credentials):
+		"""
+		prepare inputs and invoke decrypt function
+		"""
+
+		# take all data from client
+		access = credentials['access_key_id']
+		secret = credentials['secret_access_key']
+		token = credentials['token']
+		ciphertext= credentials['ciphertext']
+		region = credentials['region']
+		
+		print('ciphertext: {}'.format(ciphertext))
+		creds = decrypt_cipher(access, secret, token, ciphertext, region)
+		return creds
+
+
+def decrypt_cipher(access, secret, token, ciphertext, region):
+		"""
+		use KMS Tool Enclave Cli to decrypt cipher text
+		"""
+		print('in decrypt_cypher')
+		proc = subprocess.Popen(
+		[
+				"/app/kmstool_enclave_cli",
+				"--region", region,
+				"--proxy-port", KMS_PROXY_PORT,
+				"--aws-access-key-id", access,
+				"--aws-secret-access-key", secret,
+				"--aws-session-token", token,
+				"--ciphertext", ciphertext,
+		],
+		stdout=subprocess.PIPE,
+		stderr=subprocess.PIPE
+)
+		print('proc: {}'.format(proc))
+
+		ret = proc.communicate()
+		
+		print('ret: {}'.format(ret))
+
+		if ret[0]:
+				print('no KMS error')
+				b64text = proc.communicate()[0].decode()
+				plaintext = base64.b64decode(b64text).decode()
+				return (0, plaintext)
+		else:
+				print('kms error')
+				return (1, "KMS Error. Decryption Failed.")
+
 def server_handler(args):
 	server = VsockListener()
 	server.bind(args.port)
@@ -63,7 +126,10 @@ def server_handler(args):
 
 def put_in_redis(query):
 	for key in query.keys():
-		value = query[key]
+		status, value = get_plaintext(key)
+		if status:
+			print(value)
+			return value
 		r.set(key, value)
 		print("Setting {} to {}".format(key, value))
 	return "Put the data in"
@@ -71,7 +137,11 @@ def put_in_redis(query):
 # Get list of current ip ranges for the S3 service for a region.
 # Learn more here: https://docs.aws.amazon.com/general/latest/gr/aws-ip-ranges.html#aws-ip-download 
 def query_redis(query):
-	value = r.get(query)
+	status, value = get_plaintext(query)
+	if status:
+		print(value)
+		return value
+	value = r.get(value)
 	print("Value is: {}".format(value))
 	if value != None:
 		print("Key exists")
@@ -92,7 +162,7 @@ def main():
 	subparsers = parser.add_subparsers(title="options")
 
 	server_parser = subparsers.add_parser("server", description="Server",
-										  help="Listen on a given port.")
+											help="Listen on a given port.")
 	server_parser.add_argument("port", type=int, help="The local port to listen on.")
 	server_parser.set_defaults(func=server_handler)
 	
