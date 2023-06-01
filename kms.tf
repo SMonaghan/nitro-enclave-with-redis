@@ -169,7 +169,7 @@ data "aws_iam_policy_document" "kms_nitro_policy" {
 		}
 
 		actions = [
-			"kms:*"
+			"kms:Encrypt"
 		]
 
 		resources = [
