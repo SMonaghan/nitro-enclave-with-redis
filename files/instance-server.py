@@ -8,6 +8,10 @@ import base64
 import subprocess
 import json
 import nitro_client
+import logging
+
+
+logging.basicConfig(level=logging.INFO)
 
 output = subprocess.check_output(['nitro-cli', 'describe-enclaves'])
 enclaves = json.loads(output)
@@ -16,16 +20,16 @@ enclaves = json.loads(output)
 enclave_cid = enclaves[0]['EnclaveCID']
 
 # Print the EnclaveCID
-print(enclave_cid)
+logging.debug(enclave_cid)
 
 class HTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_PUT(self):
         path = self.translate_path(self.path)
         length = int(self.headers['Content-Length'])
         query = json.dumps({'set': nitro_client.prepare_server_request(self.rfile.read(length).decode())}).encode()
-        print(query)
+        logging.info(query)
         query64 = base64.b64encode(query)
-        print(query64)
+        logging.debug(query64)
         args = argparse.Namespace(cid=enclave_cid, port=${enclave_port}, query=query64.decode())
         output = enclave_client.client_handler(args)
         self.send_response(201)
@@ -35,14 +39,14 @@ class HTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(message)
     def do_GET(self):
         path = '/'.join(self.path.split('/')[1:])
-        print(path)
+        logging.info(path)
         query = json.dumps({'get': nitro_client.prepare_server_request(path)}).encode()
-        print(query)
+        logging.info(query)
         query64 = base64.b64encode(query)
-        print(query64)
+        logging.debug(query64)
         args = argparse.Namespace(cid=enclave_cid, port=${enclave_port}, query=query64.decode())
         output = enclave_client.client_handler(args)
-        print("Output: {}".format(output))
+        logging.info("Output: {}".format(output))
         self.send_response(200)
         self.send_header('Content-type', 'text/plain')
         self.end_headers()

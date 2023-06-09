@@ -100,3 +100,22 @@
 - Nichole Johnson
 - Darren Oliver
 - Dakota Morrow
+
+## Example Commands
+
+```
+journalctl -u nitro-lookup.service  | cut -d " " -f 6- | less
+curl -XGET "https://lookup.example.com/$(aws kms encrypt --plaintext $(echo -n 'Kim Diaz'|base64) --key-id alias/nitro-enclave --query 'CiphertextBlob' --output text)" -H 'Content-Type: text/plain'
+curl -XPUT 'https://lookup.example.com' -d $(aws kms encrypt --plaintext $(echo -n '{"Kim Diaz":"value"}'|base64) --key-id alias/nitro-enclave --query 'CiphertextBlob'|tr -d '"') -H 'Content-Type: text/plain'
+journalctl -u nitro-lookup.service -f
+sudo sed -i 's|ExecStart=/bin/start-enclave-in-debug-mode.sh|ExecStart=/bin/start-enclave.sh|g' /etc/systemd/system/nitro-lookup.service
+systemctl daemon-reload
+systemctl restart nitro-lookup.service
+journalctl -u nitro-lookup.service -f
+systemctl restart lookup-server.service
+curl -XGET "https://lookup.example.com/$(aws kms encrypt --plaintext $(echo -n 'Kim Diaz'|base64) --key-id alias/nitro-enclave --query 'CiphertextBlob' --output text)" -H 'Content-Type: text/plain'
+curl -XGET "https://lookup.example.com/$(aws kms encrypt --plaintext $(echo -n 'Kim Diazd'|base64) --key-id alias/nitro-enclave --query 'CiphertextBlob' --output text)" -H 'Content-Type: text/plain'
+curl -XPUT 'https://lookup.example.com' -d $(aws kms encrypt --plaintext $(echo -n '{"Kim Diazd":"value"}'|base64) --key-id alias/nitro-enclave --query 'CiphertextBlob'|tr -d '"') -H 'Content-Type: text/plain'
+curl -XGET "https://lookup.example.com/$(aws kms encrypt --plaintext $(echo -n 'Kim Diazd'|base64) --key-id alias/nitro-enclave --query 'CiphertextBlob' --output text)" -H 'Content-Type: text/plain'
+journalctl -u nitro-lookup.service -f
+```

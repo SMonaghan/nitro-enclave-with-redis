@@ -24,6 +24,7 @@ locals {
   enclave_name		 = "secure-channel-example"
   enclave_file		 = "${local.enclave_name}.eif"
   instance_type		 = lookup({(local.ami_ssm_arm) = "m6g.2xlarge", (local.ami_ssm_x86) = "m6i.2xlarge"}, local.ami)
+  base_image_name	 = "enclave_base_image"
   
   enclave_instance_domain	= "enclave-instance.${var.domain}"
 }

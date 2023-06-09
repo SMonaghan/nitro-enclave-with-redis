@@ -1,8 +1,8 @@
 # // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # // SPDX-License-Identifier: MIT-0
 
-ARG arch
-FROM enclave_base
+ARG base_image_name
+FROM $base_image_name
 
 ARG server_port
 ARG kms_key_id

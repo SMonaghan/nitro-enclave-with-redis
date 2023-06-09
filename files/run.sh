@@ -8,7 +8,7 @@ ip addr add 127.0.0.1/32 dev lo
 ip link set dev lo up
 
 # Add a hosts record, pointing API endpoint to local loopback
-echo "127.0.0.1   kms.us-east-2.amazonaws.com" >> /etc/hosts
+echo "127.0.0.1   kms.us-east-1.amazonaws.com" >> /etc/hosts
 
 touch /app/libnsm.so
 
