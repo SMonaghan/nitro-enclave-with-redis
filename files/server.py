@@ -15,7 +15,7 @@ from faker import Faker
 import logging
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fake = Faker('en_US')
 Faker.seed(1337)
 
@@ -93,25 +93,32 @@ def decrypt_cipher(access, secret, token, ciphertext, region):
 		use KMS Tool Enclave Cli to decrypt cipher text
 		"""
 		logging.info('in decrypt_cypher')
-		proc = subprocess.Popen(
-		[
+		proc_params = [
 				"/app/kmstool_enclave_cli",
+				"decrypt",
 				"--region", region,
 				"--proxy-port", KMS_PROXY_PORT,
 				"--aws-access-key-id", access,
 				"--aws-secret-access-key", secret,
 				"--aws-session-token", token,
 				"--ciphertext", ciphertext,
-		],
-		stdout=subprocess.PIPE,
-		stderr=subprocess.PIPE
-)
+		]
+		logging.debug('proc_params: {}'.format(proc_params))
+		proc = subprocess.Popen(
+			proc_params,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.PIPE
+		)
 
 		ret = proc.communicate()
+		
+		logging.debug('proc: {}'.format(proc.communicate()))
 
 		if ret[0]:
 				logging.info('No KMS error')
-				b64text = proc.communicate()[0].decode()
+				logging.debug('ret[0]: {}'.format(ret[0]))
+				b64text = proc.communicate()[0].decode().split()[1]
+				logging.debug('b64text: {}'.format(b64text))
 				plaintext = base64.b64decode(b64text).decode()
 				return (0, plaintext)
 		else:

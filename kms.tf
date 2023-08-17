@@ -212,7 +212,8 @@ data "aws_iam_policy_document" "kms_nitro_policy" {
 		principals {
 			type = "AWS"
 			identifiers = [
-				var.assume_role
+				var.assume_role,
+				# "arn:aws:iam::489546153674:role/Admin"
 			]
 		}
 

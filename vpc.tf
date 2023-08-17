@@ -263,6 +263,23 @@ resource "aws_vpc_endpoint" "ssm" {
   }
 }
 
+# resource "aws_vpc_endpoint" "sts" {
+#   vpc_id            = aws_vpc.main.id
+#   service_name      = "com.amazonaws.${data.aws_region.current.name}.sts"
+#   vpc_endpoint_type = "Interface"
+#   subnet_ids        = local.private_subnets
+
+#   security_group_ids = [
+#     aws_security_group.endpoint_sg.id,
+#   ]
+
+#   private_dns_enabled = true
+  
+#   tags = {
+#     Name = "nitro-enclave-sts"
+#   }
+# }
+
 resource "aws_vpc_endpoint" "kms" {
   vpc_id            = aws_vpc.main.id
   service_name      = "com.amazonaws.${data.aws_region.current.name}.kms"

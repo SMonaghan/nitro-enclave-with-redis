@@ -9,7 +9,10 @@ import socket
 import subprocess
 import argparse
 import requests
+import logging
 
+
+logging.basicConfig(level=logging.INFO)
 
 def get_token():
     token = requests.put("http://169.254.169.254/latest/api/token", headers={'X-aws-ec2-metadata-token-ttl-seconds': '21600'})
@@ -91,7 +94,7 @@ def prepare_server_request(ciphertext):
         headers={'X-aws-ec2-metadata-token': str(token)})
     response = r.json()
 
-    print(ciphertext)
+    logging.info(ciphertext)
 
     credential = {
         'access_key_id': response['AccessKeyId'],
@@ -100,6 +103,8 @@ def prepare_server_request(ciphertext):
         'region': REGION,
         'ciphertext': ciphertext
     }
+    
+    logging.info(credential)
 
     return credential
 
